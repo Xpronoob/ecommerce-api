@@ -49,13 +49,31 @@ export class UserMongoDatasourceImpl implements UserDatasource {
     const { id, name, email } = findByUserDto
 
     const searchCriteria: any = {}
-    if (id) searchCriteria.id = new RegExp(id, 'i')
-    if (name) searchCriteria.name = new RegExp(name, 'i')
-    if (email) searchCriteria.email = new RegExp(email, 'i')
+    if (id!=undefined) searchCriteria.id = new RegExp(id, 'i')
+    if (name!=undefined) searchCriteria.name = new RegExp(name, 'i')
+    if (email!=undefined) searchCriteria.email = new RegExp(email, 'i')
 
     try {
       // 2. Find users
-      // const userFinded = await UserModel.find(searchCriteria).exec()
+      const userFinded = await UserModel.findOne(searchCriteria).exec()
+      // console.log(userFinded) // [{}]
+
+      // 3. Map response
+      return PublicUserMapper.userEntityFromObject(userFinded)
+    } catch (error) {
+      if (error instanceof CustomError) {
+        throw error
+      }
+      throw CustomError.internalServer()
+    }
+  }
+
+  async findById(findByUserDto: FindByUserDto): Promise<UserEntity> {
+    // 1. Search criteria
+    const { id } = findByUserDto
+
+    try {
+      // 2. Find users
       const userFinded = await UserModel.findById(id).exec()
       // console.log(userFinded) // [{}]
 
@@ -104,12 +122,13 @@ export class UserMongoDatasourceImpl implements UserDatasource {
   }
 
   async update(updateUserDto: UpdateUserDto): Promise<UserEntity> {
-    const { id, name, email, password, roles, img } = updateUserDto
-    const updateFields: { [key: string]: any } = { name, email, roles, img }
+    const { id, name, email, roles, img, lastname, phone, address } = updateUserDto
+    const updateFields: { [key: string]: any } = { name, email, roles, img, lastname, phone, address }
+    console.log('updateFields', updateFields)
 
-    if (password) {
-      updateFields.password = this.hashPassword(password)
-    }
+    // if (password) {
+    //   updateFields.password = this.hashPassword(password)
+    // }
 
     try {
       const updatedUser = await UserModel.findByIdAndUpdate(id, { $set: updateFields }, { new: true }).exec()
